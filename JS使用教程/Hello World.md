@@ -96,3 +96,100 @@ setTimeout(function() {
     process.exit(0);
 }, 500);
 ```
+
+### 接收
+
+这就是我们的发布者。我们的消费者会监听来自 RabbitMQ 的消息，因此与只发布一条消息的发布者不同，我们将保持消费者运行以监听消息并打印出来。
+
+代码（[receive](../demo/Hello%20World/receive.js).js 中）的 require 与 send 相同：
+
+```javascript
+#!/usr/bin/env node
+
+const amqp = require("amqplib/callback_api");
+```
+
+设置与发布者相同；我们打开一个连接和一个通道，并声明我们要从哪个队列消费。请注意，这与 sendToQueue 发布到的队列一致。
+
+```javascript
+amqp.connect("amqp://localhost", function(error0, connection) {
+    if (error0) {
+        throw error0;
+    }
+    connection.createChannel(function(error1, channel) {
+        if (error1) {
+            throw error1;
+        }
+        var queue = "hello";
+
+        channel.assertQueue(queue, {
+            durable: false,
+        });
+    });
+});
+```
+
+请注意，我们在这里也声明了队列。因为我们可能会在发布者之前启动消费者，所以我们要确保队列存在，然后再尝试从队列中消费消息。
+
+我们要告诉服务器将队列中的消息传递给我们。由于它将以异步方式向我们推送消息，因此我们要提供一个回调，当 RabbitMQ 向我们的消费者推送消息时执行该回调。这就是 Channel.consume 的作用。
+
+```javascript
+console.log(" [*] Waiting for messages in %s. To exit press CTRL+C", queue);
+channel.consume(
+    queue,
+    function(msg) {
+        console.log(" [x] Received %s", msg.content.toString());
+    },
+    {
+        noAck: true,
+    }
+);
+```
+
+请注意，我们在这里也声明了队列。因为我们可能会在发布者之前启动消费者，所以我们要确保队列存在，然后再尝试从队列中消费消息。
+
+我们要告诉服务器将队列中的消息传递给我们。由于它将以异步方式向我们推送消息，因此我们要提供一个回调，当 RabbitMQ 向我们的消费者推送消息时执行该回调。这就是 Channel.consume 的作用。
+
+```javascript
+console.log(" [*] Waiting for messages in %s. To exit press CTRL+C", queue);
+channel.consume(
+    queue,
+    function(msg) {
+        console.log(" [x] Received %s", msg.content.toString());
+    },
+    {
+        noAck: true,
+    }
+);
+```
+
+### 将所有内容整合在一起
+
+现在我们可以运行这两个脚本了。在终端中，从运行发布器：
+
+```bash
+node send.js
+```
+
+然后运行消费者：
+
+```bash
+node receive.js
+```
+
+消费者将打印通过 RabbitMQ 从发布者处获得的消息。消费者将继续运行，等待消息（使用 Ctrl-C 停止），因此请尝试从另一个终端运行发布者。
+
+> **列出队列**
+> 您可能希望查看 RabbitMQ 有哪些队列以及其中有多少条消息。您可以使用 **rabbitmqctl** 工具（以特权用户身份）进行查看：
+
+```bash
+sudo rabbitmqctl list_queues
+```
+
+在 Windows 系统中，省略 sudo：
+
+```bash
+rabbitmqctl.bat list_queues
+```
+
+是时候进入第二部分，建立一个简单的工作队列了。
