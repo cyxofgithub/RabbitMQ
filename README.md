@@ -5,3 +5,4 @@
 ## 引导(Guide)
 
 -   [Hello World](./JS使用教程/Hello%20World.md)
+-   [工作队列](./JS使用教程/工作队列.md)
